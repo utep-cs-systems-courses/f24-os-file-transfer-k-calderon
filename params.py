@@ -40,4 +40,3 @@ def usage():
             else:
                 print(" [%s]   (%s if present)" % (sw, param))
     sys.exit(1)
-
