@@ -8,17 +8,21 @@ import params
 switchesVarDefaults = (
     (('-s', '--server'), 'server', "127.0.0.1:50001"),
     (('-?', '--usage'), "usage", False), # boolean (set if present)
+    (('-f', '--file'), 'file', "README.md"), # file to send
     )
 
 # this library parses the command line args. default values are used if no args are present
 paramMap = params.parseParams(switchesVarDefaults)
 
 # store args in descriptive vars
-server, usage  = paramMap["server"], paramMap["usage"]
+server, usage, fileToSend  = paramMap["server"], paramMap["usage"], paramMap["file"]
 
 if usage:
     # user invoked a help arg
     params.usage()
+if not fileToSend:
+    print("Please provide a file to send using -f or --file")
+    sys.exit(1)
 
 try:
     #further break down the server address to more specific vars
@@ -70,34 +74,34 @@ if s is None:
     print('could not open socket')
     sys.exit(1)
 
-outMessage = "Hello world!".encode()
-while len(outMessage):
-    print("sending '%s'" % outMessage.decode())
-    # s.fileno() returns the file descriptor of the socket. write to that file descriptor to send the data to the server
-    bytesSent = os.write(s.fileno(), outMessage)
-    # strip out the bytes sent in prep for the next loop
-    outMessage = outMessage[bytesSent:]
+# s.fileno() returns the file descriptor of the socket. write to that file descriptor to send the data to the server
+socketFD = s.fileno()
+with open(fileToSend, "rb") as f:
+    fileData = f.read()
+    # send the file by writing to the server
+    print("Sending data")
+    while fileData:
+        # send a chunk
+        bytesSent = os.write(socketFD, fileData)
+        print(f"Sent {bytesSent} bytes")
+        # get ready for the next chunk
+        fileData = fileData[bytesSent:]
+    # signal end of file
+    bytesSent = os.write(socketFD, b'')
+    print(f"Sent {bytesSent} bytes")
 
-data = os.read(s.fileno(), 1024).decode()
-print("Received '%s'" % data)
 
-# repeat it I guess? not sure why
-outMessage = "Hello world!".encode()
-while len(outMessage):
-    print("sending '%s'" % outMessage.decode())
-    bytesSent = s.send(outMessage)
-    outMessage = outMessage[bytesSent:]
+""" print("Waiting for server response")
+# print out server response
+serverResponse = os.read(s.fileno(), 1024).decode()
+print("Received '%s'" % serverResponse) """
 
-# signal shutdown as opposed to close
-s.shutdown(socket.SHUT_WR)      # no more output
 
-# print out the final value of data, which is the data received from the server
-# should be the outMessage above
-while 1:
-    data = s.recv(1024).decode()
-    print("Received '%s'" % data)
-    if len(data) == 0:
-        break
-print("Zero length read.  Closing")
-# not sure why we need to call close if we've already called shutodwn above
+'''
+shutdown followed by close is best practice
+shutdown signals the server of intent to close the connection.
+close releases the resources on the client.
+should do both in most cases
+'''
+s.shutdown(socket.SHUT_WR)
 s.close()

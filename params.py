@@ -20,12 +20,22 @@ def parseParams(_switchesVarDefaults):
     try:
         while len(argv):
             sw = argv[0]; del argv[0]
+            print("sw", sw)
+            print("type(sw)", type(sw))
             paramVar, defaultVal = swVarDefaultMap[sw]
+            print("paramVar", paramVar)
+            print("type(paramVar)", type(paramVar))
+            print("defaultVal", defaultVal)
+            print("swVarDefaultMap", swVarDefaultMap)
+            print("paramMap", paramMap)
             if (defaultVal):
+                print("if")
                 val = argv[0]; del argv[0]
                 paramMap[paramVar] = val
             else:
+                print("else")
                 paramMap[paramVar] = True
+            print("=============")
     except Exception as e:
         print("Problem parsing parameters (exception=%s)" % e)
         usage()
