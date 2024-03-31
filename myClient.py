@@ -84,9 +84,7 @@ while fileData:
     print(f"Sent {bytesSent} bytes")
     # get ready for the next chunk
     fileData = fileData[bytesSent:]
-# signal end of file
-bytesSent = s.send(b'\\e')
-print(f"Sent end of file marker")
+
 
 
 print("Waiting for server response")

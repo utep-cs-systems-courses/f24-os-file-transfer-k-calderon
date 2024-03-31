@@ -16,6 +16,8 @@ def dataBuilder(fileName):
         fileData += f.read()
     # escape all backslashes
     fileData.replace(b"\\", b"\\\\")
+    # mark end of file
+    fileData += b"\\e"
     # return the file data
     return fileData
 
