@@ -1,0 +1,3 @@
+./myServer.py -l 50005
+
+./myClient.py -s 127.0.0.1:50005 -f README.md & ./myClient.py -s 127.0.0.1:50005 -f declaration.txt

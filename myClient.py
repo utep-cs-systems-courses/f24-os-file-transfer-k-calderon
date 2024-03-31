@@ -3,6 +3,7 @@
 # Echo client program
 import socket, sys, re, os
 import params
+import FileHandler as FH
 
 # defines defaults for when params.parseParams is invoked
 switchesVarDefaults = (
@@ -15,12 +16,12 @@ switchesVarDefaults = (
 paramMap = params.parseParams(switchesVarDefaults)
 
 # store args in descriptive vars
-server, usage, fileToSend  = paramMap["server"], paramMap["usage"], paramMap["file"]
+server, usage, fileName  = paramMap["server"], paramMap["usage"], paramMap["file"]
 
 if usage:
     # user invoked a help arg
     params.usage()
-if not fileToSend:
+if not fileName:
     print("Please provide a file to send using -f or --file")
     sys.exit(1)
 
@@ -76,25 +77,22 @@ if s is None:
 
 # s.fileno() returns the file descriptor of the socket. write to that file descriptor to send the data to the server
 socketFD = s.fileno()
-with open(fileToSend, "rb") as f:
-    fileData = f.read()
-    # send the file by writing to the server
-    print("Sending data")
-    while fileData:
-        # send a chunk
-        bytesSent = os.write(socketFD, fileData)
-        print(f"Sent {bytesSent} bytes")
-        # get ready for the next chunk
-        fileData = fileData[bytesSent:]
-    # signal end of file
-    bytesSent = os.write(socketFD, b'')
+fileData = FH.dataBuilder(fileName)
+while fileData:
+    # send a chunk
+    bytesSent = s.send(fileData)
     print(f"Sent {bytesSent} bytes")
+    # get ready for the next chunk
+    fileData = fileData[bytesSent:]
+# signal end of file
+bytesSent = s.send(b'\\e')
+print(f"Sent end of file marker")
 
 
-""" print("Waiting for server response")
+print("Waiting for server response")
 # print out server response
 serverResponse = os.read(s.fileno(), 1024).decode()
-print("Received '%s'" % serverResponse) """
+print("Received '%s'" % serverResponse)
 
 
 '''

@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import socket, sys, params, os
+import FileHandler as FH
 
 switchesVarDefaults = (
     (('-l', '--listenPort') ,'listenPort', 50001),
@@ -60,20 +61,28 @@ while True:
 
             # save data client sends to data. max 1024 bytes at a time
             data = conn.recv(1024)
-            # send is done. break the loop
-            print("Received chunk")
-            print("len(data)", len(data))
-            if len(data) == 0:
-                print("Zero length read, nothing to send, terminating")
-                break
+            print(f"Received {len(data)} byte chunk")
             fileData += data
-            
-        fileName = f"received_file_{os.getpid()}.dat"
-        with open(fileName, "wb") as f:
+            if data[-2:] == b"\\e":
+                # send is done. break the loop
+                print("End of file, terminating")
+                break
+        # extract filename, deframe the data
+        fileName, fileData = FH.dataParser(fileData)
+        # store the file in /recfiles/
+        subdirectory = "recfiles"
+        if not os.path.exists(subdirectory):
+            os.makedirs(subdirectory)
+        # build the file path
+        filePath = os.path.join(subdirectory, fileName)
+        with open(filePath, "wb") as f:
+            # write the final file
             f.write(fileData)
+        # Tell client we're done
         print(f"Received file \"{fileName}\" from client")
+        conn.send(b"" + ("Received file \"" + fileName + "\" from client").encode())
 
-        # we're done, shut down the socket
+        # shut down the socket
         conn.shutdown(socket.SHUT_WR)
         #then close it
         conn.close()
